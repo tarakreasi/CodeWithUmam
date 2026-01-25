@@ -12,7 +12,10 @@
 # Allow .gitignore
 !.gitignore
 
-# Specifically ignore these (already covered by *, but for clarity)
+# Specifically ignore these
 *.md
 *.txt
 *.service
+
+# BUT allow README.md
+!README.md
