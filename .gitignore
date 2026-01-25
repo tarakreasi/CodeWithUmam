@@ -1,6 +1,18 @@
-# Binary hasil compile
-codeWithUmam
+# Ignore everything by default
+*
 
-# Go workspace file
-go.work
-go.work.sum
+# Allow directories
+!*/
+
+# Allow Go files
+!*.go
+!go.mod
+!go.sum
+
+# Allow .gitignore
+!.gitignore
+
+# Specifically ignore these (already covered by *, but for clarity)
+*.md
+*.txt
+*.service
