@@ -42,6 +42,19 @@ func sendError(w http.ResponseWriter, message string, code int) {
 // handleCategories adalah router utama untuk semua endpoint kategori
 // Function ini yang nge-handle semua request ke /categories
 func handleCategories(w http.ResponseWriter, r *http.Request) {
+	// --- TAMBAHAN CORS ---
+	// Biar bisa diakses dari browser/website luar (kayak Hoppscotch)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	// Preflight request (buat ngecek izin dari browser)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	// ---------------------
+
 	// Cek kalo path nya persis "/categories" (tanpa ID)
 	if r.URL.Path == "/categories" {
 		// Cek method HTTP apa yang dipake
