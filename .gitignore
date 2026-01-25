@@ -1,0 +1,6 @@
+# Binary hasil compile
+codeWithUmam
+
+# Go workspace file
+go.work
+go.work.sum
