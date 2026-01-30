@@ -68,6 +68,13 @@ func (h *ProductHandler) HandleProducts(w http.ResponseWriter, r *http.Request) 
 }
 
 // GetAll mengambil semua data produk.
+// @Summary Get all products
+// @Description Get list of all products
+// @Tags products
+// @Accept  json
+// @Produce  json
+// @Success 200 {array} models.Product
+// @Router /products [get]
 func (h *ProductHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	// Panggil service untuk ambil data
 	products, err := h.service.GetAll()
@@ -79,7 +86,14 @@ func (h *ProductHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w, products)
 }
 
-// Create membuat produk baru.
+// @Summary Create a new product
+// @Description Create a new product
+// @Tags products
+// @Accept  json
+// @Produce  json
+// @Param product body models.Product true "Product Data"
+// @Success 200 {object} models.Product
+// @Router /products [post]
 func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var product models.Product
 	// Decode JSON dari request body ke struct Product
@@ -97,7 +111,14 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w, product)
 }
 
-// GetByID mengambil satu produk berdasarkan ID di URL.
+// @Summary Get product by ID
+// @Description Get a single product by its ID
+// @Tags products
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Product ID"
+// @Success 200 {object} models.Product
+// @Router /products/{id} [get]
 func (h *ProductHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	// Ambil ID dari URL (potong prefix path-nya)
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/v1/products/")
@@ -115,7 +136,15 @@ func (h *ProductHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w, product)
 }
 
-// Update mengubah data produk yang sudah ada.
+// @Summary Update a product
+// @Description Update an existing product
+// @Tags products
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Product ID"
+// @Param product body models.Product true "Product Data"
+// @Success 200 {object} models.Product
+// @Router /products/{id} [put]
 func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/v1/products/")
 	id, err := strconv.Atoi(idStr)
@@ -139,7 +168,14 @@ func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w, product)
 }
 
-// Delete menghapus produk berdasarkan ID.
+// @Summary Delete a product
+// @Description Delete a product by ID
+// @Tags products
+// @Accept  json
+// @Produce  json
+// @Param id path int true "Product ID"
+// @Success 200 {boolean} true
+// @Router /products/{id} [delete]
 func (h *ProductHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/v1/products/")
 	id, err := strconv.Atoi(idStr)

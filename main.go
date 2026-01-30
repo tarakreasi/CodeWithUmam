@@ -13,6 +13,9 @@ import (
 	"codeWithUmam/services"
 
 	"github.com/spf13/viper"
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "codeWithUmam/docs" // Import generated docs
 )
 
 // Config adalah struct untuk menyimpan konfigurasi aplikasi.
@@ -21,6 +24,21 @@ type Config struct {
 	Port   string `mapstructure:"PORT"`    // Port dimana server akan berjalan
 	DBConn string `mapstructure:"DB_CONN"` // String koneksi database (untuk SQLite path filenya)
 }
+
+// @title CodeWithUmam API
+// @version 1.0
+// @description API untuk aplikasi Kasir sederhana dengan Arsitektur Layered (Handler-Service-Repository).
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /api/v1
 
 func main() {
 	// ==========================================
@@ -91,6 +109,11 @@ func main() {
 		json := `{"status":"OK","message":"API Running"}`
 		w.Write([]byte(json))
 	})
+
+	// Swagger Docs
+	http.HandleFunc("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"), //The url pointing to API definition
+	))
 
 	// ==========================================
 	// 5. Start Server
