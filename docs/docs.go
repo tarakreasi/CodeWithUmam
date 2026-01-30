@@ -348,12 +348,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
+                    "description": "Deskripsi singkat kategori.",
                     "type": "string"
                 },
                 "id": {
+                    "description": "ID unik kategori.\nTag ` + "`" + `json:\"id\"` + "`" + ` berarti saat diubah jadi JSON (API response), field ini akan bernama \"id\".",
                     "type": "integer"
                 },
                 "name": {
+                    "description": "Nama kategori.",
                     "type": "string"
                 }
             }
@@ -397,9 +400,9 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "",
 	BasePath:         "/api/v1",
-	Schemes:          []string{},
+	Schemes:          []string{"http", "https"},
 	Title:            "CodeWithUmam API",
 	Description:      "API untuk aplikasi Kasir sederhana dengan Arsitektur Layered (Handler-Service-Repository).",
 	InfoInstanceName: "swagger",
