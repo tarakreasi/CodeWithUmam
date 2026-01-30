@@ -112,7 +112,7 @@ func main() {
 
 	// Swagger Docs
 	http.HandleFunc("/swagger/", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:8080/swagger/doc.json"), //The url pointing to API definition
+		httpSwagger.URL("/swagger/doc.json"), // Relative URL works on both localhost and production
 	))
 
 	// ==========================================
