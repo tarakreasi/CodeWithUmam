@@ -66,4 +66,38 @@ func createTables(db *sql.DB) {
 	if _, err := db.Exec(queryProducts); err != nil {
 		log.Fatal("Gagal membuat tabel products:", err)
 	}
+
+	// ==========================================
+	// Bootcamp Session 3: Transaction Tables
+	// ==========================================
+
+	// Query untuk membuat tabel transactions
+	// Menyimpan header transaksi (total belanja, waktu transaksi)
+	queryTransactions := `
+	CREATE TABLE IF NOT EXISTS transactions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		total_amount INTEGER NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`
+
+	// Query untuk membuat tabel transaction_details
+	// Menyimpan detail barang yang dibeli per transaksi
+	queryTransactionDetails := `
+	CREATE TABLE IF NOT EXISTS transaction_details (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		transaction_id INTEGER,
+		product_id INTEGER,
+		quantity INTEGER NOT NULL,
+		subtotal INTEGER NOT NULL,
+		FOREIGN KEY(transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
+		FOREIGN KEY(product_id) REFERENCES products(id)
+	);`
+
+	if _, err := db.Exec(queryTransactions); err != nil {
+		log.Fatal("Gagal membuat tabel transactions:", err)
+	}
+
+	if _, err := db.Exec(queryTransactionDetails); err != nil {
+		log.Fatal("Gagal membuat tabel transaction_details:", err)
+	}
 }

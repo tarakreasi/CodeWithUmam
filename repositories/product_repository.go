@@ -17,9 +17,20 @@ func NewProductRepository(db *sql.DB) *ProductRepositoryImpl {
 }
 
 // GetAll mengambil semua baris data dari tabel products.
-func (r *ProductRepositoryImpl) GetAll() ([]models.Product, error) {
-	// Menjalankan query SELECT standar (tanpa JOIN).
-	rows, err := r.db.Query("SELECT id, name, price, stock, category_id FROM products")
+// Jika parameter name tidak kosong, akan dilakukan filter search by name.
+func (r *ProductRepositoryImpl) GetAll(name string) ([]models.Product, error) {
+	query := "SELECT id, name, price, stock, category_id FROM products"
+	args := []interface{}{}
+
+	// Jika ada filter nama, tambahkan WHERE clause
+	// Kita pakai LIKE untuk pencarian partial (misal: "indom" -> "Indomie")
+	if name != "" {
+		query += " WHERE name LIKE ?"
+		args = append(args, "%"+name+"%")
+	}
+
+	// Masukkan args... (spread operator) ke dalam Query
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err // Kembalikan error jika query gagal
 	}

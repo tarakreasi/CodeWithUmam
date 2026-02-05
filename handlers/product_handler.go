@@ -74,10 +74,14 @@ func (h *ProductHandler) HandleProducts(w http.ResponseWriter, r *http.Request) 
 // @Accept  json
 // @Produce  json
 // @Success 200 {array} models.Product
+// @Param name query string false "Product Name Filter"
 // @Router /products [get]
 func (h *ProductHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+	// Ambil query param "name" (misal: /products?name=indomie)
+	name := r.URL.Query().Get("name")
+
 	// Panggil service untuk ambil data
-	products, err := h.service.GetAll()
+	products, err := h.service.GetAll(name)
 	if err != nil {
 		sendError(w, err.Error(), http.StatusInternalServerError)
 		return

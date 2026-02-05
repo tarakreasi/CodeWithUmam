@@ -16,9 +16,9 @@ func NewProductService(repo repositories.ProductRepository) *ProductServiceImpl 
 	return &ProductServiceImpl{repo: repo}
 }
 
-func (s *ProductServiceImpl) GetAll() ([]models.Product, error) {
+func (s *ProductServiceImpl) GetAll(name string) ([]models.Product, error) {
 	// Di sini bisa ditambah logic, misalnya: Filter data yang aktif saja, atau sort.
-	return s.repo.GetAll()
+	return s.repo.GetAll(name)
 }
 
 func (s *ProductServiceImpl) Create(product *models.Product) error {

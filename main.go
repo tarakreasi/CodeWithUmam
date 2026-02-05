@@ -89,6 +89,11 @@ func main() {
 	productService := services.NewProductService(productRepo)
 	productHandler := handlers.NewProductHandler(productService)
 
+	// Setup Transaction (Bootcamp Session 3)
+	transactionRepo := repositories.NewTransactionRepository(db)
+	transactionService := services.NewTransactionService(transactionRepo)
+	transactionHandler := handlers.NewTransactionHandler(transactionService)
+
 	// ==========================================
 	// 4. Setup Routes
 	// ==========================================
@@ -102,6 +107,10 @@ func main() {
 	// Routes untuk Products
 	http.HandleFunc("/api/v1/products", productHandler.HandleProducts)
 	http.HandleFunc("/api/v1/products/", productHandler.HandleProducts)
+
+	// Routes untuk Transactions (Bootcamp Session 3)
+	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout)
+	http.HandleFunc("/api/report/hari-ini", transactionHandler.HandleDailyReport)
 
 	// Health Check - Endpoint sederhana untuk mengecek aplikasi hidup atau mati
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

@@ -11,7 +11,7 @@ type CategoryRepository interface {
 }
 
 type ProductRepository interface {
-	GetAll() ([]models.Product, error)
+	GetAll(name string) ([]models.Product, error)
 	Create(product *models.Product) error
 	GetByID(id int) (*models.Product, error)
 	Update(product *models.Product) error
