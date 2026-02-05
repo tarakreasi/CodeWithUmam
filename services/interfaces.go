@@ -17,3 +17,8 @@ type ProductService interface {
 	Update(product *models.Product) error
 	Delete(id int) error
 }
+
+type TransactionService interface {
+	Checkout(items []models.CheckoutItem) (*models.Transaction, error)
+	GetDailyReport() (*models.SalesSummary, error)
+}
