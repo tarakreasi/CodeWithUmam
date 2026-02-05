@@ -20,5 +20,5 @@
 # BUT allow README.md
 !README.md
 
-# Allow documentation
-!docs/dev/*.md
+# Ignore Developer Documentation
+docs/dev/
