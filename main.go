@@ -112,6 +112,10 @@ func main() {
 	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout)
 	http.HandleFunc("/api/report/hari-ini", transactionHandler.HandleDailyReport)
 
+	// Sprint 01: Transaction History
+	http.HandleFunc("/api/transactions", transactionHandler.HandleHistory) // List
+	http.HandleFunc("/api/transactions/", transactionHandler.HandleDetail) // Detail (match suffix)
+
 	// Health Check - Endpoint sederhana untuk mengecek aplikasi hidup atau mati
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
