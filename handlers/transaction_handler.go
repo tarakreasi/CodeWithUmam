@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"codeWithUmam/models"
 	"codeWithUmam/services"
@@ -39,7 +41,7 @@ func (h *TransactionHandler) HandleCheckout(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Panggil Service untuk proses checkout
-	transaction, err := h.service.Checkout(req.Items)
+	transaction, err := h.service.Checkout(req)
 	if err != nil {
 		// Jika ada error (misal stok habis), kirim response 500
 		sendError(w, err.Error(), http.StatusInternalServerError)
@@ -66,4 +68,66 @@ func (h *TransactionHandler) HandleDailyReport(w http.ResponseWriter, r *http.Re
 	}
 
 	sendJSON(w, summary)
+}
+
+// HandleHistory menangani request daftar transaksi.
+// Endpoint: GET /api/transactions
+// Params: ?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD (Optional)
+func (h *TransactionHandler) HandleHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	start := r.URL.Query().Get("start_date")
+	end := r.URL.Query().Get("end_date")
+
+	transactions, err := h.service.GetHistory(start, end)
+	if err != nil {
+		sendError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	sendJSON(w, transactions)
+}
+
+// HandleDetail menangani request detail satu transaksi.
+// Endpoint: GET /api/transactions/{id}
+func (h *TransactionHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Ambil ID dari URL Path manual (karena kita pakai net/http standard)
+	// Asumsi URL: /api/transactions/123
+	path := r.URL.Path
+	// Split by slash
+	// Contoh: ["", "api", "transactions", "123"]
+	parts := strings.Split(path, "/")
+	if len(parts) < 4 {
+		sendError(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
+
+	idStr := parts[len(parts)-1]
+	// Validasi jika idStr kosong atau bukan angka
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		sendError(w, "Invalid Transaction ID", http.StatusBadRequest)
+		return
+	}
+
+	transaction, err := h.service.GetDetail(id)
+	if err != nil {
+		sendError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if transaction == nil {
+		sendError(w, "Transaction not found", http.StatusNotFound)
+		return
+	}
+
+	sendJSON(w, transaction)
 }

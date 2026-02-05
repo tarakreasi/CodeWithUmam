@@ -77,6 +77,9 @@ func createTables(db *sql.DB) {
 	CREATE TABLE IF NOT EXISTS transactions (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		total_amount INTEGER NOT NULL,
+		paid_amount INTEGER,
+		change INTEGER,
+		payment_method TEXT,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
 

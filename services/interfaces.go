@@ -19,6 +19,8 @@ type ProductService interface {
 }
 
 type TransactionService interface {
-	Checkout(items []models.CheckoutItem) (*models.Transaction, error)
+	Checkout(req models.CheckoutRequest) (*models.Transaction, error)
 	GetDailyReport() (*models.SalesSummary, error)
+	GetHistory(start, end string) ([]models.Transaction, error)
+	GetDetail(id int) (*models.Transaction, error)
 }

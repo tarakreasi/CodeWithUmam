@@ -21,28 +21,24 @@ func NewTransactionRepository(db *sql.DB) *TransactionRepository {
 // - Consistency: Data harus valid sebelum dan sesudah transaksi.
 // - Isolation: Transaksi ini tidak boleh terganggu transaksi lain yang berjalan bersamaan.
 // - Durability: Setelah commit, data tersimpan permanen.
-func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem) (*models.Transaction, error) {
+// CreateTransaction memproses pembelian barang.
+func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem, paidAmount int, change int, paymentMethod string) (*models.Transaction, error) {
 	// 1. Mulai Database Transaction
-	// `tx` adalah objek khusus (mirip `db`) tapi semua operasinya tertahan (pending) sampai kita panggil Commit().
 	tx, err := repo.db.Begin()
 	if err != nil {
 		return nil, err
 	}
-	// Defer Rollback: Mekanisme safety net.
-	// Jika fungsi return error di tengah jalan (sebelum Commit), Rollback akan membatalkan semua perubahan.
-	// Jika Commit berhasil dijalankan, Rollback tidak akan melakukan apa-apa (no-op).
 	defer tx.Rollback()
 
 	totalAmount := 0
 	details := make([]models.TransactionDetail, 0)
 
-	// 2. Loop setiap item yang dibeli user
+	// 2. Loop setiap item yang dibeli
 	for _, item := range items {
 		var productPrice, stock int
 		var productName string
 
-		// Ambil data produk terbaru (Harga & Stok) dari DB.
-		// PENTING: Jangan percaya harga dari frontend/user input, fatal! Selalu ambil dari DB.
+		// Ambil data produk terbaru
 		err := tx.QueryRow("SELECT name, price, stock FROM products WHERE id = ?", item.ProductID).Scan(&productName, &productPrice, &stock)
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("product id %d not found", item.ProductID)
@@ -51,7 +47,7 @@ func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem
 			return nil, err
 		}
 
-		// Validasi Stok: Cek apakah stok cukup sebelum dijual.
+		// Validasi Stok
 		if stock < item.Quantity {
 			return nil, fmt.Errorf("stok tidak cukup untuk produk %s (sisa: %d)", productName, stock)
 		}
@@ -60,14 +56,11 @@ func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem
 		totalAmount += subtotal
 
 		// Kurangi stok produk
-		// Kita jalankan query UPDATE update products stok.
-		// Karena ini dalam block `tx`, perubahan ini belum permanen sampai `tx.Commit()`.
 		_, err = tx.Exec("UPDATE products SET stock = stock - ? WHERE id = ?", item.Quantity, item.ProductID)
 		if err != nil {
 			return nil, err
 		}
 
-		// Simpan detail ke memory dulu (slice details), nanti diinsert sekaligus.
 		details = append(details, models.TransactionDetail{
 			ProductID:   item.ProductID,
 			ProductName: productName, // Optional: simpan nama produk history
@@ -76,11 +69,18 @@ func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem
 		})
 	}
 
+	// Validasi ulang Paid Amount
+	// Note: change argument is ignored, we calculate it here to be safe from client manipulation
+	if paidAmount < totalAmount {
+		return nil, fmt.Errorf("uang pembayaran kurang (Total: %d, Paid: %d)", totalAmount, paidAmount)
+	}
+
+	realChange := paidAmount - totalAmount
+
 	// 3. Insert ke tabel transaction header
-	// Kita simpan total belanjaan dan dapatkan Transaction ID yang baru digenerate.
 	var transactionID int64
 	// SQLite tidak support RETURNING id secara native di semua versi/driver dengan mudah, jadi pakai LastInsertId
-	res, err := tx.Exec("INSERT INTO transactions (total_amount) VALUES (?)", totalAmount)
+	res, err := tx.Exec("INSERT INTO transactions (total_amount, paid_amount, change, payment_method) VALUES (?, ?, ?, ?)", totalAmount, paidAmount, realChange, paymentMethod)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,6 @@ func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem
 	}
 
 	// 4. Insert ke tabel transaction details
-	// Kita simpan rincian barang apa saja yang dibeli dengan TransactionID yang baru kita dapat.
 	for i := range details {
 		details[i].TransactionID = int(transactionID)
 		_, err = tx.Exec("INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES (?, ?, ?, ?)",
@@ -101,16 +100,17 @@ func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem
 	}
 
 	// 5. Commit Transaksi (Simpan permanen)
-	// Ini adalah titik penentuan. Jika baris ini sukses, semua perubahan (stok berkurang, insert transaksi) jadi permanen.
-	// Jika gagal, semua dibatalkan oleh defer Rollback() di atas.
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	return &models.Transaction{
-		ID:          int(transactionID),
-		TotalAmount: totalAmount,
-		Details:     details,
+		ID:            int(transactionID),
+		TotalAmount:   totalAmount,
+		PaidAmount:    paidAmount,
+		Change:        realChange,
+		PaymentMethod: paymentMethod,
+		Details:       details,
 	}, nil
 }
 
@@ -161,4 +161,76 @@ func (repo *TransactionRepository) GetDailySalesSummary() (*models.SalesSummary,
 	}
 
 	return summary, nil
+}
+
+// FindAll mengambil semua data transaksi, opsional dengan filter tanggal.
+// filter start/end format: YYYY-MM-DD
+func (repo *TransactionRepository) FindAll(start, end string) ([]models.Transaction, error) {
+	query := "SELECT id, total_amount, created_at FROM transactions"
+	args := []interface{}{}
+
+	if start != "" && end != "" {
+		// Filter by date range (inclusive)
+		// SQLite date function: date(created_at)
+		query += " WHERE date(created_at) BETWEEN ? AND ?"
+		args = append(args, start, end)
+	}
+
+	query += " ORDER BY created_at DESC"
+
+	rows, err := repo.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var transactions []models.Transaction
+	for rows.Next() {
+		var t models.Transaction
+		if err := rows.Scan(&t.ID, &t.TotalAmount, &t.CreatedAt); err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, t)
+	}
+
+	return transactions, nil
+}
+
+// FindByID mengambil detail transaksi beserta item-nya (JOIN).
+func (repo *TransactionRepository) FindByID(id int) (*models.Transaction, error) {
+	// 1. Ambil Header Transaksi
+	var t models.Transaction
+	err := repo.db.QueryRow("SELECT id, total_amount, created_at FROM transactions WHERE id = ?", id).Scan(&t.ID, &t.TotalAmount, &t.CreatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil // Not found
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Ambil Details (Items)
+	rows, err := repo.db.Query("SELECT id, product_id, quantity, subtotal FROM transaction_details WHERE transaction_id = ?", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var details []models.TransactionDetail
+	for rows.Next() {
+		var d models.TransactionDetail
+		if err := rows.Scan(&d.ID, &d.ProductID, &d.Quantity, &d.Subtotal); err != nil {
+			return nil, err
+		}
+		// Optional: Ambil nama produk jika perlu, tapi itu butuh JOIN lagi.
+		// Untuk efisiensi, kita bisa JOIN di query pertama atau query terpisah.
+		// Mari kita ambil nama produk sekalian biar lengkap.
+		var productName string
+		repo.db.QueryRow("SELECT name FROM products WHERE id = ?", d.ProductID).Scan(&productName)
+		d.ProductName = productName
+
+		details = append(details, d)
+	}
+
+	t.Details = details
+	return &t, nil
 }

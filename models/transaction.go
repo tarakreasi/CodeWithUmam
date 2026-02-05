@@ -5,10 +5,13 @@ import "time"
 // Transaction merepresentasikan header transaksi belanja.
 // Struct ini mencerminkan tabel `transactions` di database.
 type Transaction struct {
-	ID          int                 `json:"id"`
-	TotalAmount int                 `json:"total_amount"`
-	CreatedAt   time.Time           `json:"created_at"`
-	Details     []TransactionDetail `json:"details"` // Relasi: Satu transaksi punya banyak detail (One-to-Many)
+	ID            int                 `json:"id"`
+	TotalAmount   int                 `json:"total_amount"`
+	PaidAmount    int                 `json:"paid_amount"`
+	Change        int                 `json:"change"`
+	PaymentMethod string              `json:"payment_method"`
+	CreatedAt     time.Time           `json:"created_at"`
+	Details       []TransactionDetail `json:"details"` // Relasi: Satu transaksi punya banyak detail (One-to-Many)
 }
 
 // TransactionDetail merepresentasikan detail item dalam satu transaksi.
@@ -29,10 +32,10 @@ type CheckoutItem struct {
 	Quantity  int `json:"quantity"`
 }
 
-// CheckoutRequest adalah format body JSON untuk endpoint POST /api/checkout.
-// Contoh JSON: { "items": [ { "product_id": 1, "quantity": 2 } ] }
 type CheckoutRequest struct {
-	Items []CheckoutItem `json:"items"`
+	Items         []CheckoutItem `json:"items"`
+	PaidAmount    int            `json:"paid_amount"`
+	PaymentMethod string         `json:"payment_method"` // "CASH", "QRIS"
 }
 
 // ProductSales merepresentasikan data penjualan produk (untuk report).
