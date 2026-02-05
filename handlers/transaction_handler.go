@@ -26,6 +26,16 @@ func NewTransactionHandler(service services.TransactionService) *TransactionHand
 // HandleCheckout menangani request pembelian barang.
 // Endpoint: POST /api/checkout
 // Body JSON: { "items": [ { "product_id": 1, "quantity": 2 } ] }
+// @Summary      Checkout Transaction
+// @Description  Create a new transaction with items and payment info
+// @Tags         transactions
+// @Accept       json
+// @Produce      json
+// @Param        request body models.CheckoutRequest true "Checkout Request"
+// @Success      200  {object}  models.Transaction
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /checkout [post]
 func (h *TransactionHandler) HandleCheckout(w http.ResponseWriter, r *http.Request) {
 	// Validasi Method: Hanya boleh POST
 	if r.Method != http.MethodPost {
@@ -55,6 +65,12 @@ func (h *TransactionHandler) HandleCheckout(w http.ResponseWriter, r *http.Reque
 // HandleDailyReport menangani request laporan harian.
 // Endpoint: GET /api/report/hari-ini
 // Digunakan oleh Owner/Manajer untuk melihat omset hari ini.
+// @Summary      Get Daily Report
+// @Description  Get sales summary for today
+// @Tags         transactions
+// @Produce      json
+// @Success      200  {object}  models.SalesSummary
+// @Router       /report/hari-ini [get]
 func (h *TransactionHandler) HandleDailyReport(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -73,6 +89,14 @@ func (h *TransactionHandler) HandleDailyReport(w http.ResponseWriter, r *http.Re
 // HandleHistory menangani request daftar transaksi.
 // Endpoint: GET /api/transactions
 // Params: ?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD (Optional)
+// @Summary      Get Transaction History
+// @Description  Get list of transactions with optional date filter
+// @Tags         transactions
+// @Produce      json
+// @Param        start_date query string false "Start Date (YYYY-MM-DD)"
+// @Param        end_date   query string false "End Date (YYYY-MM-DD)"
+// @Success      200  {array}   models.Transaction
+// @Router       /transactions [get]
 func (h *TransactionHandler) HandleHistory(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -93,6 +117,14 @@ func (h *TransactionHandler) HandleHistory(w http.ResponseWriter, r *http.Reques
 
 // HandleDetail menangani request detail satu transaksi.
 // Endpoint: GET /api/transactions/{id}
+// @Summary      Get Transaction Detail
+// @Description  Get detailed transaction by ID
+// @Tags         transactions
+// @Produce      json
+// @Param        id   path      int  true  "Transaction ID"
+// @Success      200  {object}  models.Transaction
+// @Failure      404  {object}  map[string]string
+// @Router       /transactions/{id} [get]
 func (h *TransactionHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
